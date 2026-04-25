@@ -1,0 +1,166 @@
+\documentclass[10pt, aspectratio=169]{beamer}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{xcolor}
+\usepackage{colortbl}
+
+\usetheme{Madrid}
+\usecolortheme{default}
+
+% --- Couleurs personnalisees ---
+\definecolor{uqblue}{RGB}{21,101,192}
+\setbeamercolor{structure}{fg=uqblue}
+\setbeamercolor{frametitle}{bg=uqblue, fg=white}
+\setbeamercolor{title}{fg=uqblue}
+\setbeamertemplate{itemize items}[circle]
+
+\title[Prédiction Séries Temporelles]{Hackathon : Prédiction de Séries Temporelles Financières}
+\subtitle{Pipeline Deep Learning Multi-Actifs}
+\author{Louis Cluzel}
+\institute[UCA]{M1 Intelligence Artificielle -- Université Clermont Auvergne}
+\date{Avril 2026}
+
+\begin{document}
+
+% ---------------------------------------------------------
+\begin{frame}[plain]
+    \titlepage
+\end{frame}
+
+% ---------------------------------------------------------
+\begin{frame}{Le Défi}
+    \textbf{Objectif :} Prédire à l'horizon de \alert{15 pas de temps} l'évolution de deux indicateurs techniques très utilisés en trading quantitatif.
+    
+    \vspace{0.5cm}
+    \begin{block}{Indicateurs Cibles}
+        \begin{itemize}
+            \item \textbf{MACD (12, 26, 9)} : Inertie et tendance. Signal lisse et directionnel.
+            \item \textbf{Stochastique \%K (14, 3, 5)} : Momentum. Cyclique, volatil et bruité.
+        \end{itemize}
+    \end{block}
+
+    \vspace{0.5cm}
+    \textbf{Évaluation (Score Hackathon)} $\geq 0.55$ \\
+    Une formule pénalisant le \textit{reverse trading} via direction ($T$) et Pearson ($\rho$).
+\end{frame}
+
+% ---------------------------------------------------------
+\begin{frame}{Approche Multi-Actifs}
+    Pour garantir la robustesse du pipeline, nous l'avons éprouvé au-delà du cas initial sur **3 actifs très différents** :
+
+    \vspace{0.5cm}
+    \begin{columns}
+        \column{0.3\textwidth}
+        \centering
+        \textbf{Apple (AAPL)} \\
+        \vspace{0.2cm}
+        Intraday (5 min) \\
+        94 334 barres \\
+        {\small \color{gray} (Haute fréquence)}
+
+        \column{0.3\textwidth}
+        \centering
+        \textbf{Microsoft (MSFT)} \\
+        \vspace{0.2cm}
+        Journalier \\
+        $\sim$ 1 200 jours \\
+        {\small \color{gray} (Retournement récent)}
+
+        \column{0.3\textwidth}
+        \centering
+        \textbf{Nvidia (NVDA)} \\
+        \vspace{0.2cm}
+        Journalier \\
+        $\sim$ 1 250 jours \\
+        {\small \color{gray} (Forte tendance/bulle)}
+    \end{columns}
+\end{frame}
+
+% ---------------------------------------------------------
+\begin{frame}{Architecture des Modèles}
+    Nous avons testé 6 modèles en \alert{prédiction directe} sur des fenêtres glissantes ($L=120$) :
+
+    \vspace{0.5cm}
+    \begin{itemize}
+        \item \textbf{Baselines} : \textit{Random Walk} (dérive) et \textit{ARIMA} (rolling forecast).
+        \vspace{0.2cm}
+        \item \textbf{LSTM} : Réseau récurrent lourd à état de cellule (mémoire long-terme).
+        \vspace{0.2cm}
+        \item \textbf{GRU} : Réseau récurrent allégé, prévenant du sur-apprentissage.
+        \vspace{0.2cm}
+        \item \textbf{Transformer Encoder} : Auto-attention (sans contrainte séquentielle rigide).
+        \vspace{0.2cm}
+        \item \textbf{Ensemble} : Combinaison pondérée optimisée (Nelder-Mead).
+    \end{itemize}
+\end{frame}
+
+% ---------------------------------------------------------
+\begin{frame}{Résultats : Apple (Intraday)}
+    Sur le volume d'historique massif et régulier d'Apple :
+    
+    \vspace{0.5cm}
+    \begin{table}
+        \centering
+        \begin{tabular}{lccc}
+            \toprule
+            \textbf{Modèle} & \textbf{Score combiné} & \textbf{$\rho$ MACD} & \textbf{$\rho$ Stoch} \\
+            \midrule
+            \rowcolor{green!10}
+            \textbf{GRU} & \textbf{0.7908} & 0.97 & 0.77 \\
+            LSTM & 0.7037 & 0.95 & 0.43 \\
+            Ensemble & 0.5844 & 0.95 & 0.11 \\
+            Transformer & 0.3677 & 0.69 & -0.27 \\
+            \bottomrule
+        \end{tabular}
+    \end{table}
+
+    \vspace{0.3cm}
+    \textbf{Conclusion} : Le \textbf{GRU} domine. Le MACD est facilement capté par inertie, mais la parcimonie du GRU permet de gérer le bruit du stochastique bien mieux que le LSTM.
+\end{frame}
+
+% ---------------------------------------------------------
+\begin{frame}{Généralisation (Nvidia \& Microsoft)}
+    Que se passe-t-il sur des données journalières très limitées ($\sim$1200 points) ?
+
+    \vspace{0.5cm}
+    \begin{itemize}
+        \item \textbf{Nvidia (NVDA)} : \\
+        Le titre a connu une explosion directionnelle. La mémoire lourde du \textbf{LSTM} fait la différence sur l'inertie gigantesque. L'objectif hackathon est maintenu avec un score de \textbf{0.59}.
+        
+        \vspace{0.4cm}
+        \item \textbf{Microsoft (MSFT)} : \\
+        Un marché piégé dans un retournement. Tous les réseaux récurrents s'effondrent sur le MACD. Paradoxalement, seul le \textbf{Transformer} survit (score \textbf{0.47}) grâce à une compréhension ahurissante du stochastique ($\rho = 0.81$).
+    \end{itemize}
+\end{frame}
+
+% ---------------------------------------------------------
+\begin{frame}{Conclusion \& Retours}
+    \begin{block}{Une architecture ne fait pas tout}
+        Il n'y a \textbf{aucun modèle universellement supérieur}. Le régime de marché du titre sélectionné justifie l'orientation technologique :
+        \begin{itemize}
+            \item \textbf{GRU} $\rightarrow$ Tendance stable, données régulières et denses.
+            \item \textbf{LSTM} $\rightarrow$ Tendances agressives soutenues (besoin d'ignorer le bruit court-terme).
+            \item \textbf{Transformer} $\rightarrow$ Extrêmement prometteur sur les cycles (stochastique) dès lors que les données ou ressources (GPU) seront abondantes.
+        \end{itemize}
+    \end{block}
+
+    \vspace{0.5cm}
+    \centering
+    \alert{\Large Score Hackathon validé $S \geq 0.55$} \\
+    sur AAPL (0.79) et NVDA (0.59)
+\end{frame}
+
+% ---------------------------------------------------------
+\begin{frame}[plain]
+    \centering
+    \vspace{2cm}
+    {\Huge \textbf{Merci de votre attention !}} \\
+    \vspace{1cm}
+    \textit{Place aux questions.}
+\end{frame}
+
+\end{document}
