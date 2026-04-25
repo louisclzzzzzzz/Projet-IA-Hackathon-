@@ -30,9 +30,18 @@ Ce framework a été construit pour être universel, ne se limitant pas à l'opt
    ```
 2. **Lancer le pipeline d'entraînement** (exemple pour Nvidia) :
    ```bash
-   python pipeline.py --folder . --ticker NVDA
+   python pipeline.py --folder data --ticker NVDA
    ```
-   Ce script chargera le fichier `NVDA_data.xlsx`, préparera les séquences, entrainera les 5 grands modèles, et extraira ses graphes dans le dossier `/figures` ainsi que les KPIs d'évaluation dans `/results`.
+   Ce script chargera le fichier `NVDA_data.xlsx` depuis le dossier `data/`, préparera les séquences, entrainera les 5 grands modèles, et extraira ses graphes dans le dossier `/figures` ainsi que les KPIs d'évaluation dans `/results`.
+
+## 📂 Structure du projet
+- **/data** : Jeux de données financiers (Excel).
+- **/docs** : Code source LaTeX et PDF du rapport final.
+- **/figures** : Visualisations et graphes d'évaluation.
+- **/models** : Architectures deep learning et statistiques python.
+- **/preprocessing** : Modules de nettoyage et calcul de features.
+- **/results** : Fichiers JSON et CSV contenant les scores des expérimentations et rapports Markdown.
+- **/scripts** : Utilitaires de test ou de minage isolés.
 
 ## 📈 Résultats et Analyse (Rapport)
 Le détail complet des performances et de la métrique $S \ge 0.55$ du hackathon est disponible dans le fichier compilé `rapport.pdf`.
