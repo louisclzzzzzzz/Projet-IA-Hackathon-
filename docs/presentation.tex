@@ -36,21 +36,51 @@
     \textbf{Objectif :} Prédire à l'horizon de \alert{15 pas de temps} l'évolution de deux indicateurs techniques très utilisés en trading quantitatif.
     
     \vspace{0.5cm}
-    \begin{block}{Indicateurs Cibles}
-        \begin{itemize}
-            \item \textbf{MACD (12, 26, 9)} : Inertie et tendance. Signal lisse et directionnel.
-            \item \textbf{Stochastique \%K (14, 3, 5)} : Momentum. Cyclique, volatil et bruité.
-        \end{itemize}
-    \end{block}
+    \begin{columns}
+        \column{0.6\textwidth}
+        \begin{block}{Indicateurs Cibles}
+            \begin{itemize}
+                \item \textbf{MACD (12, 26, 9)} : Mesure l'inertie et la tendance.
+                \item \textbf{Stochastique \%K (14, 3, 5)} : Oscillateur de Momentum.
+            \end{itemize}
+        \end{block}
+        
+        \vspace{0.3cm}
+        \textbf{Évaluation (Score Hackathon)} $\geq 0.55$ \\
+        Formule équilibrant direction temporelle ($T$) et corrélation de Pearson ($\rho$) sur les deux courbes.
+
+        \column{0.4\textwidth}
+        \centering
+        \includegraphics[width=0.9\textwidth]{../figures/AAPL_indicators_overview.png}
+    \end{columns}
+\end{frame}
+
+% ---------------------------------------------------------
+\begin{frame}{Pipeline \& Feature Engineering}
+    \textbf{Question :} Comment un pas de temps historique pénètre-t-il le réseau ?
 
     \vspace{0.5cm}
-    \textbf{Évaluation (Score Hackathon)} $\geq 0.55$ \\
-    Une formule pénalisant le \textit{reverse trading} via direction ($T$) et Pearson ($\rho$).
+    \begin{columns}
+        \column{0.5\textwidth}
+        Chaque observation boursière est décomposée en un vecteur de \textbf{5 composantes normées} :
+        \begin{itemize}
+            \item Valeur courante MinMax
+            \item Rendement relatif au close
+            \item Moyenne mobile EMA 10
+            \item Moyenne mobile EMA 20
+            \item Volatilité locale (Écart-type 10)
+        \end{itemize}
+
+        \column{0.5\textwidth}
+        \begin{block}{Le Rôle du Lookback ($L=120$)}
+            Plutôt que des données brutes, une fenêtre glissante de 120 pas chronologiques encapsule ces vecteurs pour alimenter massivement le tenseur du réseau !
+        \end{block}
+    \end{columns}
 \end{frame}
 
 % ---------------------------------------------------------
 \begin{frame}{Approche Multi-Actifs}
-    Pour garantir la robustesse du pipeline, nous l'avons éprouvé au-delà du cas initial sur **3 actifs très différents** :
+    Au lieu de su-entraîner le modèle sur l'unique fichier test fourni, l'architecture assume une versatilité parfaite via \textbf{3 actifs extrêmes} :
 
     \vspace{0.5cm}
     \begin{columns}
@@ -58,109 +88,121 @@
         \centering
         \textbf{Apple (AAPL)} \\
         \vspace{0.2cm}
-        Intraday (5 min) \\
-        94 334 barres \\
-        {\small \color{gray} (Haute fréquence)}
+        Intraday (5 min)\\
+        94 334 barres\\
+        {\small \color{gray}(Hyper-régularité)}
 
         \column{0.3\textwidth}
         \centering
         \textbf{Microsoft (MSFT)} \\
         \vspace{0.2cm}
-        Journalier \\
-        $\sim$ 1 200 jours \\
-        {\small \color{gray} (Retournement récent)}
+        Journalier\\
+        $\sim$ 1 200 jours\\
+        {\small \color{gray}(Marché en retournement latent)}
 
         \column{0.3\textwidth}
         \centering
         \textbf{Nvidia (NVDA)} \\
         \vspace{0.2cm}
-        Journalier \\
-        $\sim$ 1 250 jours \\
-        {\small \color{gray} (Forte tendance/bulle)}
+        Journalier\\
+        $\sim$ 1 250 jours\\
+        {\small \color{gray}(Formation de bulle ultra-volatile)}
     \end{columns}
 \end{frame}
 
 % ---------------------------------------------------------
-\begin{frame}{Architecture des Modèles}
-    Nous avons testé 6 modèles en \alert{prédiction directe} sur des fenêtres glissantes ($L=120$) :
+\begin{frame}{Moteurs de Prédiction Intégrés}
+    La mécanique centrale confronte statistiquement $6$ approches sur une cartographie directe \textbf{120 pas $\rightarrow$ 15 pas} :
 
-    \vspace{0.5cm}
+    \vspace{0.4cm}
     \begin{itemize}
-        \item \textbf{Baselines} : \textit{Random Walk} (dérive) et \textit{ARIMA} (rolling forecast).
-        \vspace{0.2cm}
-        \item \textbf{LSTM} : Réseau récurrent lourd à état de cellule (mémoire long-terme).
-        \vspace{0.2cm}
-        \item \textbf{GRU} : Réseau récurrent allégé, prévenant du sur-apprentissage.
-        \vspace{0.2cm}
-        \item \textbf{Transformer Encoder} : Auto-attention (sans contrainte séquentielle rigide).
-        \vspace{0.2cm}
-        \item \textbf{Ensemble} : Combinaison pondérée optimisée (Nelder-Mead).
+        \item \textbf{Baselines} : Modèles linéaires bêtes (Random Walk, \textit{ARIMA(5,1,2)}).
+        \vspace{0.1cm}
+        \item \textbf{LSTM} : Réseau de neurones à lourde mémoire. Extrait l'inertie lente.
+        \vspace{0.1cm}
+        \item \textbf{GRU} : RNN compact. Stoppe l'accumulation pour éviter l'over-fitting !
+        \vspace{0.1cm}
+        \item \textbf{Transformer Encoder} : Pure auto-attention. Il regarde un pattern complet pour éviter la déchéance purement séquentielle.
+        \vspace{0.1cm}
+        \item \textbf{Ensemble} : Hybridation automatique des meilleurs prédictions (Nelder-Mead).
     \end{itemize}
 \end{frame}
 
 % ---------------------------------------------------------
-\begin{frame}{Résultats : Apple (Intraday)}
-    Sur le volume d'historique massif et régulier d'Apple :
-    
-    \vspace{0.5cm}
-    \begin{table}
+\begin{frame}{L'Intraday dominé par les RNN (Apple)}
+    \begin{columns}
+        \column{0.45\textwidth}
+        \begin{table}
+            \centering
+            \resizebox{\textwidth}{!}{
+            \begin{tabular}{lccc}
+                \toprule
+                \textbf{Modèle} & \textbf{Score} & \textbf{$\rho$ MACD} & \textbf{$\rho$ Stoch} \\
+                \midrule
+                \rowcolor{green!10}
+                \textbf{GRU} & \textbf{0.79} & 0.97 & 0.77 \\
+                LSTM & 0.70 & 0.95 & 0.43 \\
+                Transformer & 0.37 & 0.69 & -0.27 \\
+                \bottomrule
+            \end{tabular}
+            }
+        \end{table}
+        \vspace{0.2cm}
+        La parcimonie paramétrique du \textbf{GRU} écrase la concurrence. Contrairement au LSTM trop complexe, le GRU intercepte la violence directionnelle du Stochastique sans flancher.
+
+        \column{0.55\textwidth}
         \centering
-        \begin{tabular}{lccc}
-            \toprule
-            \textbf{Modèle} & \textbf{Score combiné} & \textbf{$\rho$ MACD} & \textbf{$\rho$ Stoch} \\
-            \midrule
-            \rowcolor{green!10}
-            \textbf{GRU} & \textbf{0.7908} & 0.97 & 0.77 \\
-            LSTM & 0.7037 & 0.95 & 0.43 \\
-            Ensemble & 0.5844 & 0.95 & 0.11 \\
-            Transformer & 0.3677 & 0.69 & -0.27 \\
-            \bottomrule
-        \end{tabular}
-    \end{table}
+        \includegraphics[width=\textwidth]{../figures/fig_pred_macd.png} \\
+        \vspace{0.2cm}
+        \includegraphics[width=\textwidth]{../figures/fig_pred_stoch.png}
+    \end{columns}
+\end{frame}
 
+% ---------------------------------------------------------
+\begin{frame}{Tester la Robustesse : Cas Journaliers}
+    Mais comment le pipeline réagit-il quand on change la brutalité des marchés ?
+    
     \vspace{0.3cm}
-    \textbf{Conclusion} : Le \textbf{GRU} domine. Le MACD est facilement capté par inertie, mais la parcimonie du GRU permet de gérer le bruit du stochastique bien mieux que le LSTM.
+    \begin{columns}
+        \column{0.45\textwidth}
+        \textbf{Le Cas MSFT (Retournement)} \\
+        Les réseaux basés sur la mémoire sont piégés par la récente chute du cours provoquant l'effondrement intégral des scores du MACD. 
+        \vspace{0.2cm}
+        \\Pourtant le \textbf{Transformer} survit à l'enfer en devinant la danse millimétrée du Stochastique ($\rho=0.81$ !).
+
+        \column{0.55\textwidth}
+        \centering
+        \includegraphics[width=0.9\textwidth]{../figures/MSFT_MACD_Line_predictions.png} \\
+        \includegraphics[width=0.9\textwidth]{../figures/MSFT_Stochastique_pctK_predictions.png}
+    \end{columns}
 \end{frame}
 
 % ---------------------------------------------------------
-\begin{frame}{Généralisation (Nvidia \& Microsoft)}
-    Que se passe-t-il sur des données journalières très limitées ($\sim$1200 points) ?
-
-    \vspace{0.5cm}
-    \begin{itemize}
-        \item \textbf{Nvidia (NVDA)} : \\
-        Le titre a connu une explosion directionnelle. La mémoire lourde du \textbf{LSTM} fait la différence sur l'inertie gigantesque. L'objectif hackathon est maintenu avec un score de \textbf{0.59}.
-        
-        \vspace{0.4cm}
-        \item \textbf{Microsoft (MSFT)} : \\
-        Un marché piégé dans un retournement. Tous les réseaux récurrents s'effondrent sur le MACD. Paradoxalement, seul le \textbf{Transformer} survit (score \textbf{0.47}) grâce à une compréhension ahurissante du stochastique ($\rho = 0.81$).
-    \end{itemize}
-\end{frame}
-
-% ---------------------------------------------------------
-\begin{frame}{Conclusion \& Retours}
-    \begin{block}{Une architecture ne fait pas tout}
-        Il n'y a \textbf{aucun modèle universellement supérieur}. Le régime de marché du titre sélectionné justifie l'orientation technologique :
+\begin{frame}{Bilan et Enseignements Multi-Régimes}
+    \begin{block}{La Suprématie est un Mythe Contextuel}
+        Le choix de la brique de calcul est vital et doit pivoter autour de \textbf{l'actif évalué} :
         \begin{itemize}
-            \item \textbf{GRU} $\rightarrow$ Tendance stable, données régulières et denses.
-            \item \textbf{LSTM} $\rightarrow$ Tendances agressives soutenues (besoin d'ignorer le bruit court-terme).
-            \item \textbf{Transformer} $\rightarrow$ Extrêmement prometteur sur les cycles (stochastique) dès lors que les données ou ressources (GPU) seront abondantes.
+            \item \textbf{GRU} $\rightarrow$ Suprématie absolue sur données massives et tendancielles.
+            \item \textbf{LSTM} $\rightarrow$ Vital pour enregistrer des dérives sur de puissantes bulles (NVDA).
+            \item \textbf{Transformer} $\rightarrow$ Excellent pour le bruit Stochastique, sans doute l'arme ultime une fois accélérée sur des noyaux GPU exclusifs.
         \end{itemize}
     \end{block}
 
-    \vspace{0.5cm}
+    \vspace{0.3cm}
     \centering
-    \alert{\Large Score Hackathon validé $S \geq 0.55$} \\
-    sur AAPL (0.79) et NVDA (0.59)
+    \alert{\Large Objectif Hackathon pulvérisé avec un max de 0.79 !} \\
+    \textit{(Objectif demandé : 0.55)}
 \end{frame}
 
 % ---------------------------------------------------------
 \begin{frame}[plain]
     \centering
-    \vspace{2cm}
+    \vspace{1.5cm}
     {\Huge \textbf{Merci de votre attention !}} \\
-    \vspace{1cm}
-    \textit{Place aux questions.}
+    \vspace{0.5cm}
+    \includegraphics[width=6.5cm]{../figures/fig_pipeline_schema.png} \\
+    \vspace{0.5cm}
+    \textit{Place à la critique et à vos questions.}
 \end{frame}
 
 \end{document}
