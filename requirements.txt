@@ -1,0 +1,27 @@
+# Projet IA — Louis Cluzel | Hackathon M1 IA UCA
+# Prédiction de séries temporelles financières (données Sibyllium intraday)
+
+# ── Données & calcul numérique ──
+numpy>=1.24.0
+pandas>=2.0.0
+scipy>=1.10.0
+
+# ── Lecture des fichiers ──
+openpyxl>=3.1.0          # Lecture .xlsx Sibyllium
+pyarrow>=12.0.0          # Lecture data.parquet
+
+# ── Machine Learning / preprocessing ──
+scikit-learn>=1.3.0      # MinMaxScaler, métriques
+
+# ── Deep Learning ──
+torch>=2.0.0             # LSTM, GRU, Transformer (CPU-only si pas de GPU)
+
+# ── Statistiques ──
+statsmodels>=0.14.0      # ARIMA
+
+# ── Visualisation (pipeline CLI) ──
+matplotlib>=3.7.0        # Graphiques statiques
+
+# ── Interface web ──
+streamlit>=1.32.0        # Application Streamlit
+plotly>=5.18.0           # Graphiques interactifs dans Streamlit
